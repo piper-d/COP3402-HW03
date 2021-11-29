@@ -59,8 +59,13 @@ void program() {
 	block();
 
 	if(token->type != 31) error(1);
-	emit(HALT, 0, 0);
-
+	emit(9, 0, 3);
+	for(int i=0; i < cIndex; i++) {
+		if(code[cIndex].opcode == 5) {
+			code[cIndex].m = table[code[cIndex].m].addr;
+		}
+	}
+	code[0].m=table[0].addr;
 }
 
 void block() {
