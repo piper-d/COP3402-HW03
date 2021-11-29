@@ -53,7 +53,10 @@ void program(lexeme* list) {
 	
 	block(list);
 
-	if(token->type != 32) error(1);
+	if(list[tIndex].type != 32){
+		error(1);
+	}
+	
 	emit(9, 0, 3);
 	for(int i=0; i < cIndex; i++) {
 		if(code[cIndex].opcode == 5) {
@@ -83,14 +86,50 @@ void block(lexeme* list) {
 }
 
 void constant(lexeme* list) {
-	if(token->type == 0) {
-		getToken(list);
-		token[]
+	if(list[tIndex].type == 0) {
+		tIndex++;
+		if(list[tIndex].type != identsym) {
+			error(2);
+		}
+		int symidx = mdc(list[tIndex]);
+		if(symidx != -1) {
+			error(13);
+		}
+		char identName[12];
+		strcpy(identName, list[tIndex].name);
+
+		tIndex++;
+
+		if(list[tIndex].type != assignsym) {
+			error(2);
+		}
+
+		tIndex++;
+
+		if(list[tIndex].type != numbersym) {
+			error(2);
+		}
+
+		addToSymbolTable(1, identName, list[tIndex].value, level, 0, 0);
+
+		tIndex++;
+
+		while(list[tIndex].type == commasym) {
+			if(list[tIndex].type != semicolonsym) {
+				if(list[tIndex++].type == identsym) {
+					error(2);
+				} else {
+					error(2);
+				}
+			}
+			tIndex++;
+		}
 	}
 }
 
-int variable() {
-
+int variable(lexeme* list) {
+	int numVars = 0;
+	if(list[tIndex])
 }
 
 void procedure() {
@@ -99,12 +138,6 @@ void procedure() {
 
 void mark() {
 
-}
-
-
-void getToken(lexeme* list) {
-	token->type = list[tIndex++].type;
-	token->value = list[tIndex++].value;
 }
 
 void emit(int opname, int level, int mvalue)
