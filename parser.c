@@ -12,16 +12,6 @@ symbol *table;
 int tIndex=0;
 int level=0;
 
-//Symbol data structure
-typedef struct {
-	int kind;		//const=1, var=2
-	char name[12];	//11 character name
-	int val;		//number in ascii
-	int level;		//L level
-	int addr;		//M address
-	int mark;
-} symbol;
-
 //Token data structure
 typedef struct {
 	char type[3]; // Token type (1-33)
@@ -29,12 +19,17 @@ typedef struct {
 } Token;
 
 //current token
+Token* tokenList[MAX_SYMBOL_COUNT];
 Token* token;
 
 void emit(int opname, int level, int mvalue);
 void addToSymbolTable(int k, char n[], int v, int l, int a, int m);
 void program();
 void block();
+void constant();
+int variable();
+void procedure();
+void mark();
 void printparseerror(int err_code);
 void printsymboltable();
 void printassemblycode();
@@ -51,14 +46,14 @@ instruction *parse(lexeme *list, int printTable, int printCode)
 	return code;
 }
 
-void program() {
+void program(lexeme* list) {
 	emit(7, 0, 0);
 	addToSymbolTable(3, "main", 0, 0, 0, 0);
 	level=-1;
 	
-	block();
+	block(list);
 
-	if(token->type != 31) error(1);
+	if(token->type != 32) error(1);
 	emit(9, 0, 3);
 	for(int i=0; i < cIndex; i++) {
 		if(code[cIndex].opcode == 5) {
@@ -68,8 +63,48 @@ void program() {
 	code[0].m=table[0].addr;
 }
 
-void block() {
+void block(lexeme* list) {
+	level++;
+	int procedure_idx = tIndex-1;
+	constant(list);
+	int x = variable();
+	procedure(list);
+	table[procedure_idx].addr = cIndex*3;
 
+	if(level==0) {
+		emit(6, 0, x);
+	} else {
+		emit(6, 0, x+3);
+	}
+
+	statement(list);
+	mark(list);
+	level--;
+}
+
+void constant(lexeme* list) {
+	if(token->type == 0) {
+		getToken(list);
+		token[]
+	}
+}
+
+int variable() {
+
+}
+
+void procedure() {
+
+}
+
+void mark() {
+
+}
+
+
+void getToken(lexeme* list) {
+	token->type = list[tIndex++].type;
+	token->value = list[tIndex++].value;
 }
 
 void emit(int opname, int level, int mvalue)
