@@ -24,12 +24,14 @@ Token* token;
 
 void emit(int opname, int level, int mvalue);
 void addToSymbolTable(int k, char n[], int v, int l, int a, int m);
-void program();
-void block();
-void constant();
-int variable();
-void procedure();
+void program(lexeme* list);
+void block(lexeme* list);
+void constant(lexeme* list);
+int variable(lexeme* list);
+void procedure(lexeme* list);
+void statement(lexeme* list);
 void mark();
+int findSymbol(lexeme list, int x);
 void printparseerror(int err_code);
 void printsymboltable();
 void printassemblycode();
@@ -70,7 +72,7 @@ void block(lexeme* list) {
 	level++;
 	int procedure_idx = tIndex-1;
 	constant(list);
-	int x = variable();
+	int x = variable(list);
 	procedure(list);
 	table[procedure_idx].addr = cIndex*3;
 
@@ -134,7 +136,7 @@ int variable(lexeme* list) {
 			numVars++;
 			tIndex++;
 			if(list[tIndex].type != identsym) {
-				error(19);
+				error(20);
 			}
 			int symidx = mdc(list[tIndex]);
 			if(symidx != -1) {
@@ -154,7 +156,7 @@ int variable(lexeme* list) {
 			if(list[tIndex].type == identsym) {
 				error(14);
 			} else {
-				error(15);
+				error(20);
 			}
 		}
 		tIndex++;
@@ -162,11 +164,134 @@ int variable(lexeme* list) {
 	}
 }
 
-void procedure() {
+void procedure(lexeme* list) {
+	while(list[tIndex].type == procsym) {
+		tIndex++;
+		if(list[tIndex].type != identsym) {
+			error();
+		}
+		int symidx = mdc(list[tIndex]);
+		if(symidx != -1) {
+			error();
+		}
+		addToSymbolTable(3, list[tIndex].name, 0, level, 0, 0);
+
+		tIndex++;
+
+		if(list[tIndex].type != semicolonsym) {
+			error();
+		}
+
+		tIndex++;
+
+		block(list);
+		if(list[tIndex].type != semicolonsym) {
+			error();
+		}
+
+		tIndex++;
+
+		emit(2, 0, 0);
+	}
+}
+
+void statement(lexeme* list) {
+	if(list[tIndex].type == identsym) {
+		int symidx = findSymbol(list[tIndex], 2);
+		if (symidx == -1) {
+			if(findSymbol(list[tIndex], 1) != findSymbol(list[tIndex], 3)) {
+				error();
+			} else {
+				error();
+			}
+		}
+
+		tIndex++;
+
+		if(list[tIndex].type != assignsym) {
+			error();
+		}
+
+		tIndex++;
+
+		expression(list);
+
+		emit(4, level-table[symidx].level, table[symbol].addr);
+		return;
+	}
+	if(list[tIndex].type == beginsym) {
+		do {
+			tIndex++;
+			statement(list);
+		} while(list[tIndex].type == semicolonsym);
+		if(list[tIndex].type != endsym) {
+			if(list[tIndex].type == identsym || list[tIndex].type == beginsym || list[tIndex].type == ifsym || list[tIndex].type == whilesym || list[tIndex].type == readsym || list[tIndex].type == writesym || list[tIndex].type == callsym) {
+				error();
+			} else {
+				error();
+			}
+		}
+		tIndex++;
+		return;
+	}
+	if(list[tIndex].type == ifsym) {
+		tIndex++;
+		condition(list);
+
+		int jpcidx = cIndex;
+		emit(8, 0, 0);
+
+		if(list[tIndex].type != thensym) {
+			error();
+		}
+
+		tIndex++;
+
+		statement(list);
+
+		if(list[tIndex].type == elsesym) {
+			int jmpidx = cIndex;
+			emit(7, 0, 0);
+			code[jpcidx].m = cIndex*3;
+			statement(list);
+			code[jmpidx].m = cIndex*3;
+		} else {
+			code[jpcidx].m = cIndex*3;
+		}
+		return;
+	}
+	if(list[tIndex].type == whilesym) {
+		tIndex++;
+		int loopidx = cIndex;
+		condition(list);
+		
+		if(list[tIndex].type != dosym) {
+			error();
+		}
+
+		tIndex++;
+
+		int jpcidx = cIndex;
+		emit(8, 0, 0);
+
+		statement(list);
+		emit(7, 0, loopidx*3);
+
+		code[jpcidx].m = cIndex*3;
+		return; 
+	}
+	if(list[tIndex].type == readsym)
+}
+
+void condition(lexeme* list) {
 
 }
 
 void mark() {
+
+}
+
+int findSymbol(lexeme list, int x) {
 
 }
 
