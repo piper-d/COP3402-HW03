@@ -7,12 +7,34 @@
 #define MAX_SYMBOL_COUNT 100
 
 instruction *code;
-int cIndex;
+int cIndex=0;
 symbol *table;
-int tIndex;
+int tIndex=0;
+int level=0;
+
+//Symbol data structure
+typedef struct {
+	int kind;		//const=1, var=2
+	char name[12];	//11 character name
+	int val;		//number in ascii
+	int level;		//L level
+	int addr;		//M address
+	int mark;
+} symbol;
+
+//Token data structure
+typedef struct {
+	char type[3]; // Token type (1-33)
+	char value[12]; //Token value (identifier or number)
+} Token;
+
+//current token
+Token* token;
 
 void emit(int opname, int level, int mvalue);
 void addToSymbolTable(int k, char n[], int v, int l, int a, int m);
+void program();
+void block();
 void printparseerror(int err_code);
 void printsymboltable();
 void printassemblycode();
@@ -29,6 +51,21 @@ instruction *parse(lexeme *list, int printTable, int printCode)
 	return code;
 }
 
+void program() {
+	emit(7, 0, 0);
+	addToSymbolTable(3, "main", 0, 0, 0, 0);
+	level=-1;
+	
+	block();
+
+	if(token->type != 31) error(1);
+	emit(HALT, 0, 0);
+
+}
+
+void block() {
+
+}
 
 void emit(int opname, int level, int mvalue)
 {
