@@ -129,7 +129,37 @@ void constant(lexeme* list) {
 
 int variable(lexeme* list) {
 	int numVars = 0;
-	if(list[tIndex])
+	if(list[tIndex].type == varsym) {
+		do {
+			numVars++;
+			tIndex++;
+			if(list[tIndex].type != identsym) {
+				error(19);
+			}
+			int symidx = mdc(list[tIndex]);
+			if(symidx != -1) {
+				error(13);
+			}
+			if(level == 0) {
+				addToSymbolTable(2, list[tIndex].name, 0, level, numVars-1, 0);
+			} else {
+				addToSymbolTable(2, list[tIndex].name, 0, level, numVars+2, 0);
+			}
+
+			tIndex++;
+
+		} while(list[tIndex].type == commasym);
+
+		if(list[tIndex].type != semicolonsym) {
+			if(list[tIndex].type == identsym) {
+				error(14);
+			} else {
+				error(15);
+			}
+		}
+		tIndex++;
+		return numVars;
+	}
 }
 
 void procedure() {
