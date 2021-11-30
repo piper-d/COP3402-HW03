@@ -94,7 +94,7 @@ void block(lexeme* list) {
 }
 
 void constant(lexeme* list) {
-	if(list[tokenIndex].type == 0) {
+	if(list[tokenIndex].type == constsym) {
 		tokenIndex++;
 		if(list[tokenIndex].type != identsym) {
 			error(2);
@@ -462,21 +462,31 @@ void factor(lexeme* list) {
 }
 
 void mark(lexeme* list) {
-
-}
-
-int findSymbol(lexeme token, int kind) {
-	for(int i = tIndex; i >= 0; i--) {
-		if(table[i].level <= level) {
-			if(strcmp(token.name, table[i].name) == 0 && kind == table[i].kind && table[i].mark == 0) {
-
+	for(int i=tIndex; i>=0; i--) {
+		if(table[i].mark == 0) {
+			if(table[i].level == level) {
+				table[i].mark = 1;
+			} else if(table[i].level < level){
+				return;
 			}
 		}
 	}
 }
 
+int findSymbol(lexeme token, int kind) {
+	int maxIndex;
+	for(int i = 0; i <= tIndex; i++) {
+		if(strcmp(token.name, table[i].name) == 0) {
+			if(kind == table[i].kind && table[i].mark == 0) {
+				maxIndex = i;
+			}
+		}
+	}
+	return maxIndex;
+}
+
 int mdc(lexeme* list) {
-	for(int i = tIndex; i >= 0; i--) {
+	for(int i = 0; i <= tIndex; i++) {
 		if(strcmp(table[i].name, list[tIndex].name) == 0) {
 			if(table[i].mark == 0) {
 				if(table[i].level == level) {
@@ -487,6 +497,7 @@ int mdc(lexeme* list) {
 	}
 	return -1;
 }
+
 void emit(int opname, int level, int mvalue)
 {
 	code[cIndex].opcode = opname;
