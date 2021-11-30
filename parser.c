@@ -8,9 +8,10 @@
 
 instruction *code;
 int cIndex=0;
-symbol *table;
+symbol* table;
 int tIndex=0;
 int level=0;
+int tokenIndex=0;
 
 //Token data structure
 typedef struct {
@@ -21,6 +22,7 @@ typedef struct {
 //current token
 Token* tokenList[MAX_SYMBOL_COUNT];
 Token* token;
+
 
 void emit(int opname, int level, int mvalue);
 void addToSymbolTable(int k, char n[], int v, int l, int a, int m);
@@ -33,8 +35,9 @@ void statement(lexeme* list);
 void expression(lexeme* list);
 void term(lexeme* list);
 void factor(lexeme* list);
-void mark();
-int findSymbol(lexeme list, int x);
+void mark(lexeme* list);
+int mdc(lexeme* list, int index);
+int findSymbol(lexeme token, int kind);
 void printparseerror(int err_code);
 void printsymboltable();
 void printassemblycode();
@@ -54,11 +57,11 @@ instruction *parse(lexeme *list, int printTable, int printCode)
 void program(lexeme* list) {
 	emit(7, 0, 0);
 	addToSymbolTable(3, "main", 0, 0, 0, 0);
-	level=-1;
+	level = -1;
 	
 	block(list);
 
-	if(list[tIndex].type != 32){
+	if(list[tokenIndex].type != periodsym){
 		error(1);
 	}
 	
@@ -73,7 +76,7 @@ void program(lexeme* list) {
 
 void block(lexeme* list) {
 	level++;
-	int procedure_idx = tIndex-1;
+	int procedure_idx = tokenIndex-1;
 	constant(list);
 	int x = variable(list);
 	procedure(list);
@@ -91,168 +94,168 @@ void block(lexeme* list) {
 }
 
 void constant(lexeme* list) {
-	if(list[tIndex].type == 0) {
-		tIndex++;
-		if(list[tIndex].type != identsym) {
+	if(list[tokenIndex].type == 0) {
+		tokenIndex++;
+		if(list[tokenIndex].type != identsym) {
 			error(2);
 		}
-		int symidx = mdc(list[tIndex]);
+		int symidx = mdc(list, tokenIndex);
 		if(symidx != -1) {
 			error(13);
 		}
 		char identName[12];
-		strcpy(identName, list[tIndex].name);
+		strcpy(identName, list[tokenIndex].name);
 
-		tIndex++;
+		tokenIndex++;
 
-		if(list[tIndex].type != assignsym) {
+		if(list[tokenIndex].type != assignsym) {
 			error(2);
 		}
 
-		tIndex++;
+		tokenIndex++;
 
-		if(list[tIndex].type != numbersym) {
+		if(list[tokenIndex].type != numbersym) {
 			error(2);
 		}
 
-		addToSymbolTable(1, identName, list[tIndex].value, level, 0, 0);
+		addToSymbolTable(1, identName, list[tokenIndex].value, level, 0, 0);
 
-		tIndex++;
+		tokenIndex++;
 
-		while(list[tIndex].type == commasym) {
-			if(list[tIndex].type != semicolonsym) {
-				if(list[tIndex++].type == identsym) {
+		while(list[tokenIndex].type == commasym) {
+			if(list[tokenIndex].type != semicolonsym) {
+				if(list[tokenIndex++].type == identsym) {
 					error(2);
 				} else {
 					error(2);
 				}
 			}
-			tIndex++;
+			tokenIndex++;
 		}
 	}
 }
 
 int variable(lexeme* list) {
 	int numVars = 0;
-	if(list[tIndex].type == varsym) {
+	if(list[tokenIndex].type == varsym) {
 		do {
 			numVars++;
-			tIndex++;
-			if(list[tIndex].type != identsym) {
+			tokenIndex++;
+			if(list[tokenIndex].type != identsym) {
 				error(20);
 			}
-			int symidx = mdc(list[tIndex]);
+			int symidx = mdc(list, tokenIndex);
 			if(symidx != -1) {
 				error(13);
 			}
 			if(level == 0) {
-				addToSymbolTable(2, list[tIndex].name, 0, level, numVars-1, 0);
+				addToSymbolTable(2, list[tokenIndex].name, 0, level, numVars-1, 0);
 			} else {
-				addToSymbolTable(2, list[tIndex].name, 0, level, numVars+2, 0);
+				addToSymbolTable(2, list[tokenIndex].name, 0, level, numVars+2, 0);
 			}
 
-			tIndex++;
+			tokenIndex++;
 
-		} while(list[tIndex].type == commasym);
+		} while(list[tokenIndex].type == commasym);
 
-		if(list[tIndex].type != semicolonsym) {
-			if(list[tIndex].type == identsym) {
+		if(list[tokenIndex].type != semicolonsym) {
+			if(list[tokenIndex].type == identsym) {
 				error(14);
 			} else {
 				error(20);
 			}
 		}
-		tIndex++;
+		tokenIndex++;
 		return numVars;
 	}
 }
 
 void procedure(lexeme* list) {
-	while(list[tIndex].type == procsym) {
-		tIndex++;
-		if(list[tIndex].type != identsym) {
+	while(list[tokenIndex].type == procsym) {
+		tokenIndex++;
+		if(list[tokenIndex].type != identsym) {
 			error();
 		}
-		int symidx = mdc(list[tIndex]);
+		int symidx = mdc(list, tokenIndex);
 		if(symidx != -1) {
 			error();
 		}
-		addToSymbolTable(3, list[tIndex].name, 0, level, 0, 0);
+		addToSymbolTable(3, list[tokenIndex].name, 0, level, 0, 0);
 
-		tIndex++;
+		tokenIndex++;
 
-		if(list[tIndex].type != semicolonsym) {
+		if(list[tokenIndex].type != semicolonsym) {
 			error();
 		}
 
-		tIndex++;
+		tokenIndex++;
 
 		block(list);
-		if(list[tIndex].type != semicolonsym) {
+		if(list[tokenIndex].type != semicolonsym) {
 			error();
 		}
 
-		tIndex++;
+		tokenIndex++;
 
 		emit(2, 0, 0);
 	}
 }
 
 void statement(lexeme* list) {
-	if(list[tIndex].type == identsym) {
-		int symidx = findSymbol(list[tIndex], 2);
+	if(list[tokenIndex].type == identsym) {
+		int symidx = findSymbol(list[tokenIndex], 2);
 		if (symidx == -1) {
-			if(findSymbol(list[tIndex], 1) != findSymbol(list[tIndex], 3)) {
+			if(findSymbol(list[tokenIndex], 1) != findSymbol(list[tokenIndex], 3)) {
 				error();
 			} else {
 				error();
 			}
 		}
 
-		tIndex++;
+		tokenIndex++;
 
-		if(list[tIndex].type != assignsym) {
+		if(list[tokenIndex].type != assignsym) {
 			error();
 		}
 
-		tIndex++;
+		tokenIndex++;
 
 		expression(list);
 
-		emit(4, level-table[symidx].level, table[symbol].addr);
+		emit(4, level-table[symidx].level, table[symidx].addr);
 		return;
 	}
-	if(list[tIndex].type == beginsym) {
+	if(list[tokenIndex].type == beginsym) {
 		do {
-			tIndex++;
+			tokenIndex++;
 			statement(list);
-		} while(list[tIndex].type == semicolonsym);
-		if(list[tIndex].type != endsym) {
-			if(list[tIndex].type == identsym || list[tIndex].type == beginsym || list[tIndex].type == ifsym || list[tIndex].type == whilesym || list[tIndex].type == readsym || list[tIndex].type == writesym || list[tIndex].type == callsym) {
+		} while(list[tokenIndex].type == semicolonsym);
+		if(list[tokenIndex].type != endsym) {
+			if(list[tokenIndex].type == identsym || list[tokenIndex].type == beginsym || list[tokenIndex].type == ifsym || list[tokenIndex].type == whilesym || list[tokenIndex].type == readsym || list[tokenIndex].type == writesym || list[tokenIndex].type == callsym) {
 				error();
 			} else {
 				error();
 			}
 		}
-		tIndex++;
+		tokenIndex++;
 		return;
 	}
-	if(list[tIndex].type == ifsym) {
-		tIndex++;
+	if(list[tokenIndex].type == ifsym) {
+		tokenIndex++;
 		condition(list);
 
 		int jpcidx = cIndex;
 		emit(8, 0, 0);
 
-		if(list[tIndex].type != thensym) {
+		if(list[tokenIndex].type != thensym) {
 			error();
 		}
 
-		tIndex++;
+		tokenIndex++;
 
 		statement(list);
 
-		if(list[tIndex].type == elsesym) {
+		if(list[tokenIndex].type == elsesym) {
 			int jmpidx = cIndex;
 			emit(7, 0, 0);
 			code[jpcidx].m = cIndex*3;
@@ -263,16 +266,16 @@ void statement(lexeme* list) {
 		}
 		return;
 	}
-	if(list[tIndex].type == whilesym) {
-		tIndex++;
+	if(list[tokenIndex].type == whilesym) {
+		tokenIndex++;
 		int loopidx = cIndex;
 		condition(list);
 		
-		if(list[tIndex].type != dosym) {
+		if(list[tokenIndex].type != dosym) {
 			error();
 		}
 
-		tIndex++;
+		tokenIndex++;
 
 		int jpcidx = cIndex;
 		emit(8, 0, 0);
@@ -283,20 +286,20 @@ void statement(lexeme* list) {
 		code[jpcidx].m = cIndex*3;
 		return; 
 	}
-	if(list[tIndex].type == readsym) {
-		tIndex++;
-		if(list[tIndex].type != identsym){
+	if(list[tokenIndex].type == readsym) {
+		tokenIndex++;
+		if(list[tokenIndex].type != identsym){
 			error();
 		}
-		int symIdx = findSymbol(list[tIndex], 2);
+		int symIdx = findSymbol(list[tokenIndex], 2);
 		if(symIdx == -1){
-			if(findSymbol(list[tIndex], 1) != findSymbol(list[tIndex],3)) {
+			if(findSymbol(list[tokenIndex], 1) != findSymbol(list[tokenIndex], 3)) {
 				error();
 			} else	{
 				error();
 			}
 		}
-		tIndex++;
+		tokenIndex++;
 		emit(9,0,2);
 		//  check psuedo for this, what is L= level etc
 		
@@ -304,58 +307,58 @@ void statement(lexeme* list) {
 		
 		return;
 	}
-	if(list[tIndex].type == writesym) {
-		tIndex++;
+	if(list[tokenIndex].type == writesym) {
+		tokenIndex++;
 		expression(list);
 		emit(9,0,1);
 		return;
 	}
-	if(list[tIndex].type == callsym) {
-		tIndex++;
-		int symIdx = findSymbol(list[tIndex],3);
+	if(list[tokenIndex].type == callsym) {
+		tokenIndex++;
+		int symIdx = findSymbol(list[tokenIndex], 3);
 		if(symIdx == -1) {
-			if(findSymbol(list[tIndex],1) != findSymbol(list[tIndex],2)) {
+			if(findSymbol(list[tokenIndex], 1) != findSymbol(list[tokenIndex], 2)) {
 				error();
 			} else {
 				error();
 			}
 		}
 		
-		tIndex++;
+		tokenIndex++;
 
 		emit(5,level-table[symIdx].level,symIdx);
 	}
 }
 
 void condition(lexeme* list) {
-	if(list[tIndex].type == oddsym) {
-		tIndex++;
+	if(list[tokenIndex].type == oddsym) {
+		tokenIndex++;
 		expression(list);
 		emit(2,0,6);
 	} else {
 		expression(list);
-		if(list[tIndex].type == eqlsym) {
-			tIndex++;
+		if(list[tokenIndex].type == eqlsym) {
+			tokenIndex++;
 			expression(list);
 			emit(2,0,8);
-		}else if(list[tIndex].type == neqsym) {
-			tIndex++;
+		}else if(list[tokenIndex].type == neqsym) {
+			tokenIndex++;
 			expression(list);
 			emit(2,0,9);
-		}else if(list[tIndex].type == lsssym) {
-			tIndex++;
+		}else if(list[tokenIndex].type == lsssym) {
+			tokenIndex++;
 			expression(list);
 			emit(2,0,10);
-		}else if(list[tIndex].type == leqsym) {
-			tIndex++;
+		}else if(list[tokenIndex].type == leqsym) {
+			tokenIndex++;
 			expression(list);
 			emit(2,0,11);
-		}else if(list[tIndex].type == gtrsym) {
-			tIndex++;
+		}else if(list[tokenIndex].type == gtrsym) {
+			tokenIndex++;
 			expression(list);
 			emit(2,0,12);
-		}else if(list[tIndex].type == geqsym) {
-			tIndex++;
+		}else if(list[tokenIndex].type == geqsym) {
+			tokenIndex++;
 			expression(list);
 			emit(2,0,13);
 		}else {
@@ -365,56 +368,56 @@ void condition(lexeme* list) {
 }
 
 void expression(lexeme* list) {
-	if(list[tIndex].type == subsym) {
-		tIndex++;
+	if(list[tokenIndex].type == subsym) {
+		tokenIndex++;
 		term(list);
 		emit(2,0,1);
-		while ( list[tIndex].type == addsym || list[tIndex].type == subsym) {
-			if(list[tIndex].type == addsym) {
-				tIndex++;
+		while ( list[tokenIndex].type == addsym || list[tokenIndex].type == subsym) {
+			if(list[tokenIndex].type == addsym) {
+				tokenIndex++;
 				term(list);
 				emit(2,0,2);
 			}else {
-				tIndex++;
+				tokenIndex++;
 				term(list);
 				emit(2,0,3);
 			}
 		}
 	}else {
-		if(list[tIndex].type == addsym) {
-			tIndex++;
+		if(list[tokenIndex].type == addsym) {
+			tokenIndex++;
 		}
 		term(list);
-		while(list[tIndex].type == addsym || list[tIndex].type == subsym) {
-			if(list[tIndex].type == addsym) {
-				tIndex++;
+		while(list[tokenIndex].type == addsym || list[tokenIndex].type == subsym) {
+			if(list[tokenIndex].type == addsym) {
+				tokenIndex++;
 				term(list);
 				emit(2,0,2);
 			}else {
-				tIndex++;
+				tokenIndex++;
 				term(list);
 				emit(2,0,3);
 			}
 		}
 	}
-	if(list[tIndex].value % 2 != 0) {
+	if(list[tokenIndex].value % 2 != 0) {
 		error();
 	}
 }
 
 void term(lexeme* list) {
 	factor(list);
-	while(list[tIndex].type == multsym || list[tIndex].type == divsym || list[tIndex].type == modsym) {
-		if(list[tIndex].type == multsym) {
-			tIndex++;
+	while(list[tokenIndex].type == multsym || list[tokenIndex].type == divsym || list[tokenIndex].type == modsym) {
+		if(list[tokenIndex].type == multsym) {
+			tokenIndex++;
 			factor(list);
 			emit(2, 0, 4);
-		} else if(list[tIndex].type == divsym) {
-			tIndex++;
+		} else if(list[tokenIndex].type == divsym) {
+			tokenIndex++;
 			factor(list);
-			emit(2, 0, 5):
+			emit(2, 0, 5);
 		} else {
-			tIndex++;
+			tokenIndex++;
 			factor(list);
 			emit(2, 0, 7);
 		}
@@ -422,12 +425,12 @@ void term(lexeme* list) {
 }
 
 void factor(lexeme* list) {
-	if(list[tIndex].type == identsym) {
-		int symIdx_var = findSymbol(list[tIndex], 2);
-		int symIdx_const = findSymbol(list[tIndex], 1);
+	if(list[tokenIndex].type == identsym) {
+		int symIdx_var = findSymbol(list[tokenIndex], 2);
+		int symIdx_const = findSymbol(list[tokenIndex], 1);
 
 		if(symIdx_var == -1 && symIdx_const == -1) {
-			if(findSymbol(list[tIndex], 3) != -1) {
+			if(findSymbol(list[tokenIndex], 3) != -1) {
 				error();
 			} else {
 				error();
@@ -437,35 +440,53 @@ void factor(lexeme* list) {
 		if(symIdx_var == -1) {
 			emit(1, 0, table[symIdx_const].val);
 		} else if(symIdx_const == -1 || table[symIdx_var].level > table[symIdx_const].level) {
-			emit(3, level-table[symIdx_var],level, table[symIdx_var].addr);
+			emit(3, level-table[symIdx_var].level, table[symIdx_var].addr);
 		} else {
 			emit(1, 0, table[symIdx_const].val);
 		}
 
-		tIndex++;
-	} else if(list[tIndex].type == numbersym) {
+		tokenIndex++;
+	} else if(list[tokenIndex].type == numbersym) {
 		emit(1, 0, 0);
-		tIndex++;
-	} else if(list[tIndex].type == lparensym) {
-		tIndex++;
+		tokenIndex++;
+	} else if(list[tokenIndex].type == lparensym) {
+		tokenIndex++;
 		expression(list);
-		if(list[tIndex].type != rparensym) {
+		if(list[tokenIndex].type != rparensym) {
 			error();
 		}
-		tIndex++;
+		tokenIndex++;
 	} else {
 		error();
 	}
 }
 
-void mark() {
+void mark(lexeme* list) {
 
 }
 
-int findSymbol(lexeme list, int x) {
+int findSymbol(lexeme token, int kind) {
+	for(int i = tIndex; i >= 0; i--) {
+		if(table[i].level <= level) {
+			if(strcmp(token.name, table[i].name) == 0 && kind == table[i].kind && table[i].mark == 0) {
 
+			}
+		}
+	}
 }
 
+int mdc(lexeme* list) {
+	for(int i = tIndex; i >= 0; i--) {
+		if(strcmp(table[i].name, list[tIndex].name) == 0) {
+			if(table[i].mark == 0) {
+				if(table[i].level == level) {
+					return i;
+				}
+			}
+		}
+	}
+	return -1;
+}
 void emit(int opname, int level, int mvalue)
 {
 	code[cIndex].opcode = opname;
