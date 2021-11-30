@@ -45,12 +45,8 @@ void printassemblycode();
 instruction *parse(lexeme *list, int printTable, int printCode)
 {
 	code = NULL;
-	/* this line is EXTREMELY IMPORTANT, you MUST uncomment it
-		when you test your code otherwise IT WILL SEGFAULT in 
-		vm.o THIS LINE IS HOW THE VM KNOWS WHERE THE CODE ENDS
-		WHEN COPYING IT TO THE PAS
 	code[cIndex].opcode = -1;
-	*/
+	
 	return code;
 }
 
