@@ -19,14 +19,13 @@ int main(int argc, char *argv[])
 	instruction *code;
 	int i;
 	int tokens = 0, symbols = 0, codes = 0, outputs = 0;
-	
+	argc = 2;
 	if (argc < 2)
 	{
 		printf("Error : please include the file name\n");
 		return 0;
 	}
-	
-	ifp = fopen(argv[1], "r");
+	ifp = fopen("basic.txt", "r");
 	input = malloc(MAX_CODE_LENGTH * sizeof(char));
 	i = 0;
 	
@@ -39,7 +38,6 @@ int main(int argc, char *argv[])
 			break;
 	}
 	input[i] = '\0';
-	
 	for (i = 2; i < argc; i++)
 	{
 		if (argv[i][1] == 'l')
@@ -57,14 +55,12 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 	}
-	
 	list = lexanalyzer(input, tokens);
 	if (list == NULL)
 	{
 		free(input);
 		return 0;
 	}
-	
 	code = parse(list, symbols, codes);
 	if (code == NULL)
 	{
@@ -73,7 +69,7 @@ int main(int argc, char *argv[])
 	 	return 0;
 	}
 	
-	execute_program(code, outputs);
+	//execute_program(code, outputs);
 	
 	free(input);
 	free(list);

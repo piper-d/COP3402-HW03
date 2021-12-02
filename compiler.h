@@ -1,3 +1,5 @@
+#ifndef compiler_h
+#define compiler_h
 /* 
 	This is the header file for the UCF Fall 2021 Systems Software Project.
 	If you choose to alter this, you MUST make a note of that in your
@@ -36,3 +38,4 @@ typedef struct symbol {
 lexeme *lexanalyzer(char *input, int printFlag);
 instruction *parse(lexeme *list, int printTable, int printCode);
 void execute_program(instruction *code, int printFlag);
+#endif

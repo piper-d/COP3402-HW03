@@ -1,0 +1,4 @@
+vvar x, y, z
+begin
+	x := 5
+end.
